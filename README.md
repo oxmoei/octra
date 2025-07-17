@@ -18,7 +18,7 @@ Linux Ubuntu OS
 
 ## Clone the repository
    ```bash
-   git clone https://github.com/YLX-hub/octra.git
+   git clone https://github.com/oxmoei/octra.git
    cd octra
    ```
 
