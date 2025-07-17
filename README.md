@@ -14,10 +14,12 @@ Linux Ubuntu OS
 * **Codespace**: If you don't have VPS or Windows WSL, you can use [Github Codespace](https://github.com/codespaces), create a blank template and run your codes.
 
 ---
+## Support system
 
+- ![macOS](https://img.shields.io/badge/-macOS-000000?logo=apple&logoColor=white)
+- ![Linux](https://img.shields.io/badge/-Linux-FCC624?logo=linux&logoColor=black)
 
 ## Clone the repository
-   **WSL/Linux/macOS:**
    ```bash
    git clone https://github.com/oxmoei/octra.git
    cd octra
