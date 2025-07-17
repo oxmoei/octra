@@ -1,0 +1,7 @@
+.DS_Store
+wallet.oct
+octra_wallet_*
+node_modules
+.cursor
+wallet-generator
+wallet-generator.exe

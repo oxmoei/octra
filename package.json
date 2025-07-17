@@ -1,0 +1,24 @@
+{
+  "name": "octra-wallet-generator",
+  "version": "1.0.0",
+  "description": "Octra Wallet Generator in TypeScript",
+  "main": "wallet_generator.ts",
+  "type": "module",
+  "scripts": {
+    "start": "bun wallet_generator.ts",
+    "dev": "bun --watch wallet_generator.ts",
+    "build": "bun build --compile --outfile=wallet-generator ./wallet_generator.ts"
+  },
+  "dependencies": {
+    "tweetnacl": "^1.0.3",
+    "bip39": "^3.1.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.16",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
+  },
+  "keywords": ["wallet", "crypto", "ed25519", "bip39", "typescript"],
+  "author": "",
+  "license": "MIT"
+}

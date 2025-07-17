@@ -1,0 +1,194 @@
+name: Build Executables
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x64
+            bun-target: bun-linux-x64
+            artifact-name: wallet-generator-linux-x64
+            executable-ext: ""
+          - os: windows-latest
+            target: windows-x64
+            bun-target: bun-windows-x64
+            artifact-name: wallet-generator-windows-x64
+            executable-ext: ".exe"
+          - os: macos-13
+            target: macos-x64
+            bun-target: bun-darwin-x64
+            artifact-name: wallet-generator-macos-x64
+            executable-ext: ""
+          - os: macos-latest
+            target: macos-arm64
+            bun-target: bun-darwin-arm64
+            artifact-name: wallet-generator-macos-arm64
+            executable-ext: ""
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Workaround for Bun cache issue on Windows
+        if: runner.os == 'Windows'
+        run: |
+          # Create temporary project on C:\ to initialize Bun cache for target platform
+          # This works around https://github.com/oven-sh/bun/issues/11198
+          mkdir C:\temp-bun-cache-init
+          cd C:\temp-bun-cache-init
+          echo 'console.log("cache init");' > index.js
+          bun build --compile --target=${{ matrix.bun-target }}-baseline --outfile=cache-init${{ matrix.executable-ext }} ./index.js
+          cd ${{ github.workspace }}
+          Remove-Item -Recurse -Force C:\temp-bun-cache-init
+
+      - name: Build executable
+        run: bun build --compile --target=${{ matrix.bun-target }}-baseline --outfile=wallet-generator${{ matrix.executable-ext }} ./wallet_generator.ts
+
+      - name: Test executable (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          chmod +x ./wallet-generator${{ matrix.executable-ext }}
+          # Start server in background
+          ./wallet-generator${{ matrix.executable-ext }} &
+          SERVER_PID=$!
+          echo "Started server with PID: $SERVER_PID"
+          
+          # Wait for server to start
+          sleep 3
+          
+          # Test that server is responding
+          if curl -f http://localhost:8888/ > /dev/null 2>&1; then
+            echo "✓ Server is responding correctly"
+          else
+            echo "✗ Server failed to respond"
+            kill $SERVER_PID 2>/dev/null || true
+            exit 1
+          fi
+          
+          # Test embedded assets
+          if curl -f http://localhost:8888/assets/logo.svg > /dev/null 2>&1; then
+            echo "✓ Embedded assets are working"
+          else
+            echo "✗ Embedded assets failed"
+            kill $SERVER_PID 2>/dev/null || true
+            exit 1
+          fi
+          
+          # Clean up
+          kill $SERVER_PID 2>/dev/null || true
+          echo "✓ Executable test completed successfully"
+
+      - name: Test executable (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          # Start server in background
+          Start-Process -FilePath ".\wallet-generator${{ matrix.executable-ext }}" -WindowStyle Hidden
+          
+          # Wait for server to start
+          Start-Sleep -Seconds 5
+          
+          # Test that server is responding
+          try {
+            $response = Invoke-WebRequest -Uri "http://localhost:8888/" -TimeoutSec 10
+            if ($response.StatusCode -eq 200) {
+              Write-Host "✓ Server is responding correctly"
+            } else {
+              Write-Host "✗ Server returned status code: $($response.StatusCode)"
+              Get-Process -Name "wallet-generator*" | Stop-Process -Force
+              exit 1
+            }
+          } catch {
+            Write-Host "✗ Server failed to respond: $_"
+            Get-Process -Name "wallet-generator*" | Stop-Process -Force
+            exit 1
+          }
+          
+          # Test embedded assets
+          try {
+            $response = Invoke-WebRequest -Uri "http://localhost:8888/assets/logo.svg" -TimeoutSec 10
+            if ($response.StatusCode -eq 200) {
+              Write-Host "✓ Embedded assets are working"
+            } else {
+              Write-Host "✗ Assets returned status code: $($response.StatusCode)"
+              Get-Process -Name "wallet-generator*" | Stop-Process -Force
+              exit 1
+            }
+          } catch {
+            Write-Host "✗ Embedded assets failed: $_"
+            Get-Process -Name "wallet-generator*" | Stop-Process -Force
+            exit 1
+          }
+          
+          # Clean up
+          Get-Process -Name "wallet-generator*" | Stop-Process -Force
+          Write-Host "✓ Executable test completed successfully"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: wallet-generator${{ matrix.executable-ext }}
+          retention-days: 30
+
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Display structure of downloaded files
+        run: ls -la ./artifacts/
+
+      - name: Create release archives
+        run: |
+          cd ./artifacts
+          for dir in */; do
+            artifact_name=${dir%/}
+            cd "$dir"
+            if [[ "$artifact_name" == *"windows"* ]]; then
+              zip "../${artifact_name}.zip" wallet-generator.exe
+            else
+              tar -czf "../${artifact_name}.tar.gz" wallet-generator
+            fi
+            cd ..
+          done
+          ls -la
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ./artifacts/*.zip
+            ./artifacts/*.tar.gz
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
