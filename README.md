@@ -17,12 +17,14 @@ Linux Ubuntu OS
 
 
 ## Clone the repository
+   **WSL/Linux/macOS:**
    ```bash
    git clone https://github.com/oxmoei/octra.git
    cd octra
    ```
 
 ## Install dependecies
+
 ```bash
 chmod +x ./install.sh
 sudo ./install.sh
@@ -32,7 +34,7 @@ sudo ./install.sh
 
 ## Create wallet
 ### 1. Run the wallet generator webserver
-   **Linux/macOS:**
+   **WSL/Linux/macOS:**
    ```bash
    chmod +x ./start.sh
    ./start.sh
