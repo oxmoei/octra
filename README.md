@@ -15,32 +15,23 @@ Linux Ubuntu OS
 
 ---
 
+
+## Clone the repository
+   ```bash
+   git clone https://github.com/YLX-hub/octra.git
+   cd octra
+   ```
+
 ## Install dependecies
-Install & Update Packages:
-```
-sudo apt update && sudo apt upgrade -y
-sudo apt install screen curl iptables build-essential git wget lz4 jq make gcc nano automake autoconf tmux htop nvme-cli libgbm1 pkg-config libssl-dev libleveldb-dev tar clang bsdmainutils ncdu unzip libleveldb-dev  -y
-```
-Install Nodejs (Only VPS users)
-```
-sudo apt update
-sudo curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-sudo apt install -y nodejs
-node -v
-npm install -g yarn
-yarn -v
+```bash
+chmod +x ./install.sh
+sudo ./install.sh
 ```
 
 ---
 
 ## Create wallet
-### 1. Clone the repository
-   ```bash
-   git clone https://github.com/0xmoei/wallet-gen.git
-   cd wallet-gen
-   ```
-
-### 2. Run the wallet generator webserver
+### 1. Run the wallet generator webserver
    **Linux/macOS:**
    ```bash
    chmod +x ./start.sh
@@ -48,7 +39,7 @@ yarn -v
    ```
 
 
-### 3. Open your browser
+### 2. Open your browser
 * **WSL/Linux/MAC users:**
   * Navigate to `http://localhost:8888` on browser
 
@@ -70,7 +61,7 @@ yarn -v
     ```
   * Visit the prompted url, and enter your password to access wallet generator page
 
-### 4. Generate wallet
+### 3. Generate wallet
 * Click "GENERATE NEW WALLET" and watch the real-time progress
 * Save all the details of your Wallet
 
